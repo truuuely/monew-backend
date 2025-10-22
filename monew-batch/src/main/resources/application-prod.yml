@@ -11,10 +11,10 @@ spring:
     show-sql: false
 
   batch:
-    job:
-      enabled: false
     jdbc:
       initialize-schema: never
+    job:
+      enabled: true
 
   task:
     scheduling:
