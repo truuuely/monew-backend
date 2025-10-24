@@ -18,9 +18,9 @@ import java.util.UUID;
 public class ArticleViewDto {
 
     private Long id;                            // 조회 기록 ID
-    private UUID viewedBy;                      // 조회한 사용자 ID
+    private Long viewedBy;                      // 조회한 사용자 ID
     private LocalDateTime createdAt;            // 조회 시각
-    private UUID articleId;                     // 기사 ID
+    private Long articleId;                     // 기사 ID
     private String source;                      // 기사 출처
     private String sourceUrl;                   // 기사 원본 URL
     private String articleTitle;                // 기사 제목
