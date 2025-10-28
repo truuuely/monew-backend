@@ -47,10 +47,7 @@ public class ArticleService {
                 });
 
         // 조회 기록 생성
-        ArticleView articleView = new ArticleView();
-        articleView.setUserId(userId);
-        articleView.setArticleId(articleId);
-
+        ArticleView articleView = new ArticleView(userId, articleId);
         ArticleView saved = articleViewRepository.save(articleView);
         log.info("[조회 기록 성공] 기사 ID: {}, 사용자 ID: {}", articleId, userId);
 
@@ -148,7 +145,7 @@ public class ArticleService {
                     return new ArticleNotFoundException();
                 });
 
-        article.setDeleted(true);
+        article.softDelete();
         log.info("[논리 삭제 성공] 기사 ID: {}", articleId);
     }
 
