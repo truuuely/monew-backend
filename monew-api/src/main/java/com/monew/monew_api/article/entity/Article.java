@@ -1,10 +1,10 @@
 package com.monew.monew_api.article.entity;
 
 import com.monew.monew_api.common.entity.BaseIdEntity;
+import com.monew.monew_api.common.exception.article.ArticleNotFoundException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,7 +14,6 @@ import java.util.List;
  * 뉴스 기사 테이블
  */
 @Getter
-@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "articles")
@@ -46,4 +45,11 @@ public class Article extends BaseIdEntity {
 
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InterestArticles> interestArticles = new ArrayList<>();
+
+    public void softDelete() {
+        if (this.isDeleted) {
+            throw new ArticleNotFoundException();
+        }
+        this.isDeleted = true;
+    }
 }

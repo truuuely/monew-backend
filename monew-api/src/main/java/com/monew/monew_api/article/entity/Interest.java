@@ -4,7 +4,6 @@ import com.monew.monew_api.common.entity.BaseIdEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +12,6 @@ import java.util.List;
  * 관심사 테이블
  */
 @Getter
-@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "interests")

@@ -2,16 +2,16 @@ package com.monew.monew_api.article.entity;
 
 import com.monew.monew_api.common.entity.BaseCreatedEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * 뉴스 기사 조회 테이블
  */
 @Getter
-@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(
         name = "article_views",
