@@ -9,15 +9,17 @@ import com.monew.monew_api.comments.entity.Comment;
 
 public interface CommentRepository extends JpaRepository<Comment, Long>, CommentRepositoryCustom {
 
+	// 좋아요 취소
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("""
-         update Comment c 
-         set c.likeCount = case when c.likeCount > 0 then c.likeCount - 1 else 0 end
-         where c.id = :id
-         """)
+		update Comment c 
+		set c.likeCount = case when c.likeCount > 0 then c.likeCount - 1 else 0 end
+		where c.id = :id
+		""")
 	int decLikeCount(@Param("id") Long id);
 
+	// 댓글 물리 삭제
 	@Modifying
-	@Query(value = "DELETE FROM comments WHERE id = :id", nativeQuery = true)
-	void hardDeleteById(@Param("id") Long id);
+	@Query(value = "DELETE FROM comments WHERE id = :id AND is_deleted = true", nativeQuery = true)
+	int hardDeleteById(@Param("id") Long id);
 }

@@ -1,24 +1,18 @@
 package com.monew.monew_api.comments.repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
-import com.monew.monew_api.comments.entity.Comment;
+import com.monew.monew_api.comments.dto.CursorPageResponseCommentDto;
 
 public interface CommentRepositoryCustom {
 
-	List<Comment> findPageByArticleIdOrderByCreatedAtDesc(
+	// 댓글 조회
+	CursorPageResponseCommentDto searchComments(
 		Long articleId,
-		Long cursorId,
-		LocalDateTime cursorCreatedAt,
-		int limit
+		String orderBy,
+		String cursor,
+		LocalDateTime after,
+		int limit,
+		Long userId
 	);
-
-	List<Comment> findPageByArticleIdOrderByLikeCountDesc(
-		Long articleId,
-		Long cursorId,
-		Integer cursorLikeCount,
-		int limit
-	);
-
 }

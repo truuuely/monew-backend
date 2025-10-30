@@ -7,13 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.monew.monew_api.comments.entity.CommentLike;
 
-public interface CommentLikeRepository extends JpaRepository<CommentLike,Long> {
+public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
 
+	// 좋아요 중복 확인
 	boolean existsByComment_IdAndUser_Id(Long commentId, Long userId);
 
+	// 자신 좋아요 취소
 	void deleteByComment_IdAndUser_Id(Long commentId, Long userId);
-
-	// N+1 회피용: 특정 사용자 + 여러 댓글 ID에 대한 좋아요 목록
-	List<CommentLike> findByUser_IdAndComment_IdIn(Long userId, Collection<Long> commentIds);
 
 }

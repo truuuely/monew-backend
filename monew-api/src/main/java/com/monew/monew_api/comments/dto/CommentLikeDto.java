@@ -31,18 +31,4 @@ public record CommentLikeDto(
 			like.getCreatedAt().toString()
 		);
 	}
-
-	public static CommentLikeDto of(Long commentId, Long userId) {
-		return new CommentLikeDto(
-			null,
-			commentId,
-			null,
-			userId,
-			null, null, null,
-			-1,
-			null,
-			LocalDateTime.now().toString()
-		);
-	}
-
 }
