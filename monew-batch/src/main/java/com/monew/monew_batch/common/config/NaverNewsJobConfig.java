@@ -1,0 +1,64 @@
+package com.monew.monew_batch.common.config;
+
+import com.monew.monew_api.interest.entity.Interest;
+import com.monew.monew_batch.article.dto.ArticleInterestPair;
+import com.monew.monew_batch.article.job.NaverNewsItemProcessor;
+import com.monew.monew_batch.article.job.NaverNewsItemReader;
+import com.monew.monew_batch.article.job.NaverNewsItemWriter;
+import com.monew.monew_batch.article.properties.NaverApiProperties;
+import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import java.util.List;
+
+@Configuration
+@EnableBatchProcessing
+@RequiredArgsConstructor
+@EnableConfigurationProperties(NaverApiProperties.class)
+public class NaverNewsJobConfig {
+
+    private final NaverNewsItemReader reader;
+    private final NaverNewsItemProcessor processor;
+    private final NaverNewsItemWriter writer;
+
+    @Bean
+    public Job naverNewsJob(JobRepository jobRepository, Step naverNewsStep) {
+        return new JobBuilder("naverNewsJob", jobRepository)
+                .start(naverNewsStep)
+                .build();
+    }
+
+    @Bean
+    public Step naverNewsStep(JobRepository jobRepository,
+                              PlatformTransactionManager transactionManager) {
+        return new StepBuilder("naverNewsStep", jobRepository)
+                .<Interest, List<ArticleInterestPair>>chunk(1, transactionManager)
+                .reader(reader)
+                .processor(processor)
+                .writer(writer)
+                .taskExecutor(taskExecutor())
+                .build();
+    }
+
+    /**
+     * 스레드 동시성은 TaskExecutor에서 직접 설정
+     */
+    @Bean
+    public TaskExecutor taskExecutor() {
+        SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("naver-news-thread-");
+        executor.setConcurrencyLimit(5);
+        return executor;
+    }
+
+}
