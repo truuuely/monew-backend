@@ -13,4 +13,6 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, Article
 
     @Query("SELECT DISTINCT a.source FROM Article a WHERE a.isDeleted = false")
     List<String> findDistinctSources();
+
+    Optional<Article> findBySourceUrl(String sourceUrl);
 }

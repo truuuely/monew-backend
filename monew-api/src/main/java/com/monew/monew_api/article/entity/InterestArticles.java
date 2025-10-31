@@ -3,6 +3,7 @@ package com.monew.monew_api.article.entity;
 import com.monew.monew_api.common.entity.BaseIdEntity;
 import com.monew.monew_api.interest.entity.Interest;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
  * 기사 - 관심사 연결 테이블
  */
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
         name = "interest_articles",
@@ -25,4 +26,9 @@ public class InterestArticles extends BaseIdEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interest_id", nullable = false)
     private Interest interest;
+
+    public InterestArticles(Article article, Interest interest) {
+        this.article = article;
+        this.interest = interest;
+    }
 }
