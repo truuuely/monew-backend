@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BatchScheduler {
+public class NotificationCleanupScheduler {
 
     private final JobLauncher jobLauncher;
     private final Job deleteOldNotificationJob;
