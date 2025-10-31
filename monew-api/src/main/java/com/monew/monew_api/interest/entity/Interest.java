@@ -12,10 +12,11 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "interests")
-@Getter
+@Getter @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class Interest extends BaseTimeEntity {
@@ -35,8 +36,8 @@ public class Interest extends BaseTimeEntity {
     this.subscriberCount = subscriberCount;
   }
 
-  public static Interest create(String interestName) {
-    return new Interest(interestName, 0);
+  public static Interest create(String name) {
+    return new Interest(name, 0);
   }
 
   public InterestKeyword addKeyword(Keyword keyword) {
