@@ -25,7 +25,7 @@ public class ArticleCleanupScheduler {
      * 매일 새벽 4시에 is_deleted = true인 뉴스들을 물리 삭제
      */
     @Transactional
-    @Scheduled(cron = "0 10 4 * * *")
+    @Scheduled(cron = "0 10 4 * * *", zone = "UTC")
     public void deleteSoftDeletedArticles() {
         log.info("🧹 [ArticleCleanupScheduler] 논리 삭제된 뉴스 정리 시작");
 

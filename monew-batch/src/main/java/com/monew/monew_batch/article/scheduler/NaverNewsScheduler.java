@@ -19,7 +19,7 @@ public class NaverNewsScheduler {
     private final JobLauncher jobLauncher;
     private final Job naverNewsJob;
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 * * * *", zone = "UTC")
     public void runJob() throws Exception {
         log.info("🕒 [Batch Scheduler] 네이버 뉴스 수집 Job 실행");
 
