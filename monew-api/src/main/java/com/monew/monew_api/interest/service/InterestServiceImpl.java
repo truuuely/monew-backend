@@ -205,7 +205,8 @@ public class InterestServiceImpl implements InterestService {
       default:
         throw new IllegalArgumentException("invalid order");
     }
-    return cursorValue;
+    return String.valueOf(last.getId());
+//    return cursorValue;
   }
 
 
