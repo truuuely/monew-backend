@@ -1,5 +1,6 @@
 package com.monew.monew_api.subscribe.service;
 
+import com.monew.monew_api.common.exception.interest.InterestNotFoundException;
 import com.monew.monew_api.common.exception.subscribe.SubscribeDuplicateException;
 import com.monew.monew_api.common.exception.subscribe.SubscribeNotFoundException;
 import com.monew.monew_api.common.exception.user.UserNotFoundException;
@@ -32,14 +33,14 @@ public class SubscribeServiceImpl implements SubscribeService {
   public SubscribeDto createSubscribe(Long interestId, Long userId) {
 
     Interest interest = interestRepository.findById(interestId)
-        .orElseThrow(UserNotFoundException::new);
+        .orElseThrow(InterestNotFoundException::new);
     User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
     if(subscribeRepository.existsByInterestAndUser(interest, user)){
       throw new SubscribeDuplicateException();
     }
     log.info("현재 관심사 구독자 수 : {}", interest.getSubscriberCount());
-    interest.setSubscriberCount(interest.getSubscriberCount() + 1);
+    interest.addSubscriberCount();
     log.info("관심사 구독 후 구독자 수: {}", interest.getSubscriberCount());
 
     Subscribe subscribe = Subscribe.create(interest, user);
@@ -53,7 +54,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   public void deleteSubscribe(Long interestId, Long userId) {
 
     Interest interest = interestRepository.findById(interestId)
-        .orElseThrow(UserNotFoundException::new);
+        .orElseThrow(InterestNotFoundException::new);
     User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
     Subscribe subscribe = subscribeRepository.findByInterestAndUser(interest,user)
@@ -61,7 +62,7 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     subscribeRepository.delete(subscribe);
     log.info("현재 관심사 구독자 수 : {}", interest.getSubscriberCount());
-    interest.setSubscriberCount(Math.max(0,interest.getSubscriberCount() - 1));
+    interest.cancelSubscriberCount();
     log.info("관심사 구독 취소 후 구독자 수: {}", interest.getSubscriberCount());
   }
 }
