@@ -1,11 +1,11 @@
 -- ===== Clean drop (drop children first) =====
-DROP TABLE IF EXISTS article_keyword_logs CASCADE;
 DROP TABLE IF EXISTS comment_likes CASCADE;
 DROP TABLE IF EXISTS article_views CASCADE;
 DROP TABLE IF EXISTS comments CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS subscribes CASCADE;
 DROP TABLE IF EXISTS interest_keywords CASCADE;
+DROP TABLE IF EXISTS interest_articles_keywords CASCADE;
 DROP TABLE IF EXISTS interest_articles CASCADE;
 DROP TABLE IF EXISTS keywords CASCADE;
 DROP TABLE IF EXISTS articles CASCADE;
@@ -196,28 +196,16 @@ CREATE TABLE notifications
 );
 
 -- ======================================================
--- Article Keyword Logs (뉴스가 어떤 관심사·키워드로 수집됐는지 추적)
+-- Interest - Article - Keyword 관계 (현재 상태)
 -- ======================================================
-CREATE TABLE article_keyword_logs
-(
-    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    article_id    BIGINT    NOT NULL,
-    keyword_id    BIGINT    NOT NULL,
-    interest_id   BIGINT    NOT NULL,
-    collected_at  TIMESTAMP NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_article_keyword_logs UNIQUE (article_id, keyword_id, interest_id),
-
-    CONSTRAINT fk_article_keyword_logs_article
-        FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE,
-
-    CONSTRAINT fk_article_keyword_logs_keyword
-        FOREIGN KEY (keyword_id) REFERENCES keywords (id) ON DELETE CASCADE,
-
-    CONSTRAINT fk_article_keyword_logs_interest
-        FOREIGN KEY (interest_id) REFERENCES interests (id) ON DELETE CASCADE
+CREATE TABLE interest_articles_keywords (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    interest_article_id BIGINT NOT NULL,
+    keyword_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_interest_articles_keywords UNIQUE (interest_article_id, keyword_id),
+    CONSTRAINT fk_iak_interest_article FOREIGN KEY (interest_article_id) REFERENCES interest_articles (id) ON DELETE CASCADE,
+    CONSTRAINT fk_iak_keyword FOREIGN KEY (keyword_id) REFERENCES keywords (id) ON DELETE CASCADE
 );
-
-CREATE INDEX ix_article_keyword_logs_article ON article_keyword_logs (article_id);
-CREATE INDEX ix_article_keyword_logs_keyword ON article_keyword_logs (keyword_id);
-CREATE INDEX ix_article_keyword_logs_interest ON article_keyword_logs (interest_id);
+CREATE INDEX ix_interest_articles_keywords_interest_article ON interest_articles_keywords (interest_article_id);
+CREATE INDEX ix_interest_articles_keywords_keyword ON interest_articles_keywords (keyword_id);
