@@ -10,6 +10,12 @@ public interface InterestRepository extends JpaRepository<Interest, Long>, Inter
 
   boolean existsByName(String name);
 
-  @Query("SELECT i FROM Interest i JOIN FETCH i.keywords k JOIN FETCH k.keyword")
+  /** 모든 관심사와 해당 관심사에 연결된 키워드들을 함께 조회 */
+  @Query("""
+        SELECT i
+        FROM Interest i
+        JOIN FETCH i.keywords ik
+        JOIN FETCH ik.keyword
+    """)
   List<Interest> findAllWithKeywords();
 }
