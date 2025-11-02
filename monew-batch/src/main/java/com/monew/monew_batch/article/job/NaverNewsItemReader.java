@@ -21,7 +21,7 @@ public class NaverNewsItemReader implements ItemReader<Interest> {
     private int nextIndex = 0;
 
     @Override
-    public Interest read() {
+    public synchronized Interest read() {
         if (items == null) {
             items = interestRepository.findAllWithKeywords();
             log.info("📰 관심사 {}개 로드 완료", items.size());

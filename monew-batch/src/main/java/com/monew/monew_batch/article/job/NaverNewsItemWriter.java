@@ -2,8 +2,8 @@ package com.monew.monew_batch.article.job;
 
 import com.monew.monew_api.article.entity.Article;
 import com.monew.monew_api.article.entity.InterestArticles;
-import com.monew.monew_api.article.repository.ArticleKeywordLogRepository;
 import com.monew.monew_api.article.repository.ArticleRepository;
+import com.monew.monew_api.article.repository.InterestArticleKeywordRepository;
 import com.monew.monew_api.article.repository.InterestArticlesRepository;
 import com.monew.monew_api.common.exception.article.ArticleNotFoundException;
 import com.monew.monew_api.interest.entity.Interest;
@@ -27,7 +27,7 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleInterestPair>
     private final ArticleJdbcRepository articleJdbcRepository;
     private final ArticleRepository articleRepository;
     private final InterestArticlesRepository interestArticlesRepository;
-    private final ArticleKeywordLogRepository articleKeywordLogRepository;
+    private final InterestArticleKeywordRepository interestArticleKeywordRepository;
 
     @Override
     public void write(Chunk<? extends List<ArticleInterestPair>> chunk) {
@@ -45,8 +45,8 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleInterestPair>
 
                 Article savedArticle = handleRestoreAndFind(article);
 
-                // 2. 관심사-기사 및 키워드 로그 처리
-                ProcessResult result = handleInterestAndLogs(savedArticle, interest);
+                // 2. 관심사·기사·키워드 관계 처리
+                ProcessResult result = handleInterestAndKeywords(savedArticle, interest);
 
                 linkedCount += result.linkedCount();
                 skippedCount += result.skippedCount();
@@ -61,11 +61,9 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleInterestPair>
      */
     private boolean handleInsertIgnore(Article article) {
         boolean isNew = articleJdbcRepository.insertIgnore(article);
-
         if (isNew) {
             log.info("🆕 신규 기사 저장: {}", article.getTitle());
         }
-
         return isNew;
     }
 
@@ -82,23 +80,34 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleInterestPair>
     }
 
     /**
-     * 관심사-기사 관계 및 키워드 로그 처리
+     * 관심사-기사 관계 및 키워드 연결 처리
      */
-    private ProcessResult handleInterestAndLogs(Article article, Interest interest) {
+    private ProcessResult handleInterestAndKeywords(Article article, Interest interest) {
         int linkedCount = 0;
         int skippedCount = 0;
 
+        // 1. 관심사-기사 연결 (InterestArticles)
+        InterestArticles interestArticle =
+                interestArticlesRepository.findByArticleAndInterest(article, interest)
+                        .orElseGet(() -> {
+                            InterestArticles newLink = new InterestArticles(article, interest);
+                            interestArticlesRepository.save(newLink);
+                            log.info("🔗 [{}] 관심사-기사 연결 완료: {}", interest.getName(), article.getTitle());
+                            return newLink;
+                        });
+
+        // 2. 관심사-키워드 연결 (InterestArticlesKeywords)
         for (InterestKeyword ik : interest.getKeywords()) {
             Keyword keyword = ik.getKeyword();
+            int inserted = interestArticleKeywordRepository.insertIgnore(
+                    interestArticle.getId(), keyword.getId()
+            );
 
-            // 키워드 로그 중복 무시 (interest 포함)
-            articleKeywordLogRepository.insertIgnore(article.getId(), keyword.getId(), interest.getId());
-
-            // 관심사-기사 연결 (현재 연결 상태용)
-            if (!interestArticlesRepository.existsByArticleAndInterest(article, interest)) {
-                interestArticlesRepository.save(new InterestArticles(article, interest));
+            if (inserted > 0) {
                 linkedCount++;
-                log.info("🔗 [{}] 관심사-기사 연결 완료: {}", interest.getName(), article.getTitle());
+                log.info("📎 [{}-{}] 연결 완료: {}", interest.getName(), keyword.getKeyword(), article.getTitle());
+            } else {
+                skippedCount++;
             }
         }
 
@@ -109,7 +118,7 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleInterestPair>
      * 결과 요약 로그
      */
     private void logSummary(int total, int newCount, int linkedCount, int skippedCount) {
-        log.info("💾 Writer 결과 | 총: {} | 신규 기사: {} | 연결: {} | 스킵(로그 중복): {}",
+        log.info("💾 Writer 결과 | 총: {} | 신규 기사: {} | 연결: {} | 스킵(중복): {}",
                 total, newCount, linkedCount, skippedCount);
     }
 
