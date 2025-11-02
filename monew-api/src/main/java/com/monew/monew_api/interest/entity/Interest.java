@@ -1,6 +1,8 @@
 package com.monew.monew_api.interest.entity;
 
 import com.monew.monew_api.common.entity.BaseTimeEntity;
+import com.monew.monew_api.domain.user.User;
+import com.monew.monew_api.subscribe.entity.Subscribe;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,13 +37,22 @@ public class Interest extends BaseTimeEntity {
     this.subscriberCount = subscriberCount;
   }
 
-  public static Interest create(String interestName) {
-    return new Interest(interestName, 0);
+  public static Interest create(String name) {
+    return new Interest(name, 0);
   }
 
   public InterestKeyword addKeyword(Keyword keyword) {
     InterestKeyword interestKeyword = InterestKeyword.create(this, keyword);
     this.keywords.add(interestKeyword);
     return interestKeyword;
+  }
+
+  public void addSubscriberCount(){
+    this.subscriberCount++;
+
+  }
+
+  public void cancelSubscriberCount(){
+    this.subscriberCount--;
   }
 }
