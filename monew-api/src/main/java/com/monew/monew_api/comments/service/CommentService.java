@@ -86,7 +86,6 @@ public class CommentService {
 		Comment comment = getCommentById(commentId);
 		log.info("[COMMENT][LIKE] 엔티티 조회 완료 - user={}, comment={}", user.getId(), comment.getId());
 		CommentLike saved = commentLikeRepository.save(CommentLike.of(user, comment));
-		comment.increaseLike();
 
 		eventPublisher.publishEvent(
 			CommentLikedEvent.of(
@@ -102,6 +101,8 @@ public class CommentService {
                     comment.getCreatedAt(),
                     user.getId(),
                     user.getNickname()));
+
+        comment.increaseLike();
 		log.info("[COMMENT][LIKE] userId={}, commentId={}", userId, commentId);
 		return CommentLikeDto.from(saved);
 	}
