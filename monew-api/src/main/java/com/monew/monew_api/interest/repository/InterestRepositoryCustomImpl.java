@@ -3,8 +3,7 @@ package com.monew.monew_api.interest.repository;
 import com.monew.monew_api.interest.entity.Interest;
 import com.monew.monew_api.interest.dto.InterestOrderBy;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -15,13 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Repository;
 
 import static com.monew.monew_api.interest.entity.QInterestKeyword.interestKeyword;
 import static com.monew.monew_api.interest.entity.QKeyword.keyword1;
 import static com.monew.monew_api.interest.entity.QInterest.interest;
-import static com.monew.monew_api.subscribe.entity.QSubscribe.subscribe;
 
 @Repository
 @RequiredArgsConstructor
@@ -29,129 +26,96 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
 
   private final JPAQueryFactory queryFactory;
 
- @Override
+  @Override
   public Slice<Interest> findAll(
       String searchKeyword,
-      InterestOrderBy sortBy,
-      Direction direction,
+      InterestOrderBy orderBy,
+      Order direction,
       String cursor,
       LocalDateTime after,
       int limit
   ) {
+    BooleanBuilder builder = new BooleanBuilder();
 
-    BooleanBuilder builder = new BooleanBuilder()
-        .and(containsInterestOrKeyword(searchKeyword));
-    if (after != null) {
-      builder.and(interest.createdAt.goe(after));
+    if (searchKeyword != null && !searchKeyword.isBlank()) {
+      builder.and(
+          interest.name.containsIgnoreCase(searchKeyword)
+              .or(keyword1.keyword.containsIgnoreCase(searchKeyword))
+      );
     }
-    builder.and(cursorCondition(cursor, sortBy, direction));
 
-    // id + 정렬값
-    Expression<?> sortExpr = sortExpression(sortBy);
+    if (after != null) {
+      builder.and(interest.createdAt.gt(after));
+    }
 
-    List<Tuple> rows = queryFactory
-        .selectDistinct(interest.id, sortExpr)
+    Order ord = (direction == null || direction == Order.DESC) ? Order.DESC : Order.ASC;
+    boolean desc = (ord == Order.DESC);
+
+    Long cursorId = null;
+    String cursorName = null;
+    Integer cursorCnt = null;
+
+    OrderSpecifier<?>[] orderSpec = new OrderSpecifier<?>[]{};;
+
+    switch (orderBy) {
+      case name -> {
+        cursorName = (cursor == null || cursor.isBlank()) ? null : cursor;
+
+        orderSpec = new OrderSpecifier<?>[]{
+            new OrderSpecifier<>(ord, interest.name)
+        };
+
+        if (cursorName != null) {
+          builder.and(desc ? interest.name.lt(cursorName) : interest.name.gt(cursorName));
+        }
+      }
+
+      case subscriberCount -> {
+        cursorId = (cursor == null || cursor.isBlank()) ? null : Long.valueOf(cursor);
+
+        if (cursorId != null) {
+          Interest base = queryFactory.selectFrom(interest)
+              .where(interest.id.eq(cursorId))
+              .fetchOne();
+          if (base != null)
+            cursorCnt = base.getSubscriberCount();
+        }
+
+        orderSpec = new OrderSpecifier<?>[]{
+            new OrderSpecifier<>(ord, interest.subscriberCount),
+            new OrderSpecifier<>(ord, interest.id)
+        };
+
+        if (cursorId != null && cursorCnt != null) {
+          BooleanExpression cut = desc
+              ? interest.subscriberCount.lt(cursorCnt)
+              .or(interest.subscriberCount.eq(cursorCnt).and(interest.id.lt(cursorId)))
+              : interest.subscriberCount.gt(cursorCnt)
+                  .or(interest.subscriberCount.eq(cursorCnt).and(interest.id.gt(cursorId)));
+          builder.and(cut);
+        }
+      }
+    }
+
+    List<Interest> rowsPlusOne = queryFactory
+        .select(interest)
         .from(interest)
-        .leftJoin(interest.keywords,
-            interestKeyword)
+        .leftJoin(interest.keywords, interestKeyword)
         .leftJoin(interestKeyword.keyword, keyword1)
         .where(builder)
-        .orderBy(sortBy(sortBy, direction))
+        .groupBy(interest.id)
+        .orderBy(orderSpec)
         .limit(limit + 1)
         .fetch();
 
-    boolean hasNext = rows.size() > limit;
-    if (hasNext)
-      rows = rows.subList(0, limit);
+    boolean hasNext = rowsPlusOne.size() > limit;
+    List<Interest> content = hasNext ? rowsPlusOne.subList(0, limit) : rowsPlusOne;
 
-    // 추출된 id들만 조회
-    List<Long> ids = rows.stream()
-        .map(t -> t.get(interest.id))
-        .toList();
-
-    List<Interest> interests = queryFactory
-        .selectFrom(interest)
-        .distinct()
-        .leftJoin(interest.keywords, interestKeyword).fetchJoin()
-        .leftJoin(interestKeyword.keyword, keyword1).fetchJoin()
-        .where(interest.id.in(ids))
-        .orderBy(sortBy(sortBy, direction
-        ))
-        .fetch();
-
-    return new SliceImpl<>(interests, PageRequest.of(0, limit), hasNext);
+    return new SliceImpl<>(content, PageRequest.of(0, limit), hasNext);
   }
-
-
-  private BooleanExpression containsInterestOrKeyword(String searchKeyword) {
-    if (searchKeyword == null || searchKeyword.isBlank())
-      return null;
-    return interest.name.containsIgnoreCase(searchKeyword)
-        .or(keyword1.keyword.containsIgnoreCase(searchKeyword));
-  }
-
-  private Expression<?> sortExpression(InterestOrderBy sortBy) {
-    return switch (sortBy) {
-      case name -> interest.name;
-      case subscriberCount -> interest.subscriberCount;
-    };
-  }
-
-  // 커서 조건: cursor는 id로 가정 -> 해당 id 레코드를 읽어 1차 정렬값 + id로 커팅
-  private BooleanExpression cursorCondition(
-      String cursor, InterestOrderBy sortBy, Direction direction) {
-    if (cursor == null || cursor.isBlank())
-      return null;
-
-    boolean desc = (direction == Direction.DESC);
-    Long cursorId = Long.valueOf(cursor);
-
-    Interest cursorInterest = queryFactory
-        .selectFrom(interest)
-        .where(interest.id.eq(cursorId))
-        .fetchOne();
-
-    if (cursorInterest == null)
-      return null;
-
-    return switch (sortBy) {
-      case name -> {
-        String afterName = cursorInterest.getName();
-        yield desc
-            ? interest.name.lt(afterName)
-            : interest.name.gt(afterName);
-      }
-      case subscriberCount -> {
-        int afterCnt = cursorInterest.getSubscriberCount();
-        yield desc
-            ? interest.subscriberCount.lt(afterCnt)
-            .or(interest.subscriberCount.eq(afterCnt)
-                .and(interest.id.lt(cursorId)))
-            : interest.subscriberCount.gt(afterCnt)
-                .or(interest.subscriberCount.eq(afterCnt)
-                    .and(interest.id.gt(cursorId)));
-      }
-    };
-  }
-
-  private OrderSpecifier<?>[] sortBy(InterestOrderBy sortBy, Direction direction) {
-    boolean asc = (direction == Direction.ASC);
-    return switch (sortBy) {
-      case name -> asc
-          ? new OrderSpecifier[]{interest.name.asc(), interest.id.asc()}
-          : new OrderSpecifier[]{interest.name.desc(), interest.id.desc()};
-      case subscriberCount -> asc
-          ? new OrderSpecifier[]{interest.subscriberCount.asc(), interest.id.asc()}
-          : new OrderSpecifier[]{interest.subscriberCount.desc(), interest.id.desc()};
-    };
-  }
-
-
 
   @Override
-  public long countFilteredTotalElements(String keyword, InterestOrderBy orderBy,
-      Direction direction) {
-
+  public Long countFilteredTotalElements(String keyword) {
     JPAQuery<Long> query = queryFactory
         .select(interest.countDistinct())
         .from(interest);
@@ -170,7 +134,6 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
     }
     Long count = query.where(builder).fetchOne();
     return (count != null) ? count : 0L;
-
   }
 }
 
