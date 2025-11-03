@@ -19,6 +19,7 @@ import com.monew.monew_api.interest.repository.InterestRepository;
 import com.monew.monew_api.interest.repository.KeywordRepository;
 import com.monew.monew_api.subscribe.repository.SubscribeRepository;
 import com.monew.monew_api.subscribe.repository.SubscribeRepository.InterestCountProjection;
+import com.querydsl.core.types.Order;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,9 +32,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,16 +87,19 @@ public class InterestServiceImpl implements InterestService {
   public CursorPageResponseInterestDto getInterests(Long userId,
       CursorPageRequestInterestDto request) {
 
-    final String keyword = (request.keyword() == null) ? null : request.keyword();
+    final String keyword = (request.keyword() == null || request.keyword().isBlank())
+        ? null : request.keyword();
     final InterestOrderBy orderBy =
         (request.orderBy() == null) ? InterestOrderBy.name : request.orderBy();
-    final Direction direction = (request.direction() == null) ? Direction.ASC : request.direction();
+    final Order direction = (request.direction() == null)? Order.ASC : request.direction();
     final String cursor = request.cursor();
     final LocalDateTime after = request.after();
     final int limit = request.limit();
 
     Slice<Interest> slices = interestRepository.findAll(
         keyword, orderBy, direction, cursor, after, limit);
+    log.info("REQ userId={}, keyword={}, orderBy={}, direction={}, cursor={}, after={}, limit={}",
+        userId, keyword, orderBy, direction, cursor, after, limit);
 
     List<Interest> interests = slices.getContent();
 
@@ -129,23 +131,21 @@ public class InterestServiceImpl implements InterestService {
     }
 
     boolean hasNext = slices.hasNext();
-    String nextCursor = calculateNextCursor(interests, orderBy, hasNext);
+    String nextCursor = calculateNextCursor(interests, countMap, orderBy, hasNext);
     LocalDateTime nextAfter = calculateNextAfter(interests);
-    long totalElements = interestRepository.countFilteredTotalElements(keyword, orderBy, direction);
+    long totalElements = interestRepository.countFilteredTotalElements(keyword);
 
     return new CursorPageResponseInterestDto(
-        interestDtos, nextCursor, nextAfter, interestDtos.size(), totalElements, hasNext);
+        interestDtos, nextCursor, nextAfter, limit, totalElements, hasNext);
   }
 
   @Override
   @Transactional
   public InterestDto updateInterestKeywords(
-      InterestUpdateRequest request, Long interestId, Long userId) {
+      InterestUpdateRequest request, Long interestId) {
 
-    User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
     Interest interest = interestRepository.findById(interestId)
         .orElseThrow(InterestNotFoundException::new);
-    boolean subscribedByMe = subscribeRepository.existsByInterestAndUser(interest, user);
 
     updateKeywords(interest, request.keywords());
 
@@ -153,7 +153,7 @@ public class InterestServiceImpl implements InterestService {
         .map(ik -> ik.getKeyword().getKeyword())
         .collect(Collectors.toList());
 
-    return interestMapper.toInterestDto(interest, keywords, subscribedByMe);
+    return interestMapper.toInterestDto(interest, keywords, false);
   }
 
   @Override
@@ -188,25 +188,20 @@ public class InterestServiceImpl implements InterestService {
   }
 
 
-  private String calculateNextCursor(List<Interest> interests, InterestOrderBy orderBy,
-      boolean hasNext) {
-    if (!hasNext || interests.isEmpty()) {
-      return null;
-    }
+  private String calculateNextCursor(
+      List<Interest> interests,
+      Map<Long, Long> countMap,
+      InterestOrderBy orderBy,
+      boolean hasNext
+  ) {
+    if (!hasNext || interests.isEmpty()) return null;
+
     Interest last = interests.get(interests.size() - 1);
-    String cursorValue = "";
-    switch (orderBy) {
-      case name:
-        cursorValue = last.getName();
-        break;
-      case subscriberCount:
-        cursorValue = String.valueOf(last.getSubscriberCount());
-        break;
-      default:
-        throw new IllegalArgumentException("invalid order");
-    }
-    return String.valueOf(last.getId());
-//    return cursorValue;
+
+    return switch (orderBy) {
+      case name -> last.getName();
+      case subscriberCount -> String.valueOf(last.getId());
+    };
   }
 
 
