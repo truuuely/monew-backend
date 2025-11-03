@@ -69,8 +69,8 @@ public class ReverseIndexDocument {
 
     /**
      * Interest 구독자 역인덱스 키 생성
-     * @param interestId
-     * @return
+     * @param interestId 관심사 ID
+     * @return "interest_{interestId}_subs"
      */
     public static String makeInterestSubscribersKey(Long interestId) {
         return "interest_" + interestId + "_subs";

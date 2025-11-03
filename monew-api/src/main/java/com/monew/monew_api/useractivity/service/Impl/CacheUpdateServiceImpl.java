@@ -272,6 +272,8 @@ public class CacheUpdateServiceImpl implements CacheUpdateService {
 
     /**
      * 역인덱스 초기 생성
+     * @param userId 사용자 ID
+     * @param data   사용자 활동 내역
      */
     private void buildReverseIndexes(String userId, UserActivityDto data) {
         data.getComments().forEach(comment -> {

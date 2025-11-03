@@ -46,7 +46,7 @@ public class UserActivityCacheServiceImpl implements UserActivityCacheService {
         }
 
         log.info("[UserActivityCache] 캐시 미스: userId={} - PostgreSQL 조회", userId);
-        UserActivityDto result = userActivityService.getUserActivity(userId);
+        UserActivityDto result = userActivityService.getUserActivitySingleQuery(userId);
 
         try {
             eventPublisher.publishEvent(new CacheSaveEvent(userId, result));
