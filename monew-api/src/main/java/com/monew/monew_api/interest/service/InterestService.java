@@ -13,7 +13,7 @@ public interface InterestService {
   CursorPageResponseInterestDto getInterests(Long userId,
       CursorPageRequestInterestDto cursorRequest);
 
-  InterestDto updateInterestKeywords(InterestUpdateRequest request, Long interestId, Long userId);
+  InterestDto updateInterestKeywords(InterestUpdateRequest request, Long interestId);
 
   void deleteInterest(Long interestId);
 
