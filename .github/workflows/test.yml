@@ -11,12 +11,12 @@ jobs:
 
     env:
       SPRING_PROFILES_ACTIVE: test
-      AWS_S3_ACCESS_KEY: dummy-access
-      AWS_S3_SECRET_KEY: dummy-secret
-      AWS_S3_REGION: ap-northeast-2
-      AWS_S3_BUCKET: test-bucket
-      NAVER_CLIENT_ID: dummy
-      NAVER_CLIENT_SECRET: dummy
+      AWS_S3_ACCESS_KEY: ${{ secrets.AWS_S3_ACCESS_KEY }}
+      AWS_S3_SECRET_KEY: ${{ secrets.AWS_S3_SECRET_KEY }}
+      AWS_S3_REGION: ${{ secrets.AWS_S3_REGION }}
+      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+      NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
