@@ -17,7 +17,6 @@ COPY settings.gradle ./
 COPY build.gradle ./
 COPY gradlew ./
 COPY gradle gradle/
-#COPY monew-monitor/build.gradle monew-monitor/
 
 # 2) CRLF 제거 + 실행권한 + 래퍼 존재/버전 확인
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && \
@@ -63,9 +62,6 @@ RUN apk add --no-cache tzdata && \
 
 # 빌드 스테이지에서 JAR 파일 복사
 COPY --from=builder /app/build/app.jar app.jar
-
-# 로그 디렉토리 생성 및 권한 설정
-RUN mkdir -p /app/.logs && chown -R spring:spring /app/.logs
 
 # 소유권 변경
 RUN chown spring:spring app.jar
