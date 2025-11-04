@@ -170,7 +170,7 @@ public class InterestServiceImpl implements InterestService {
     eventPublisher.publishEvent(InterestUpdatedEvent.of(interest.getId(), keywords));
 
     log.info("interestId = {}, 관심사 키워드 수정 완료 : {}", interestId, keywords);
-    return interestMapper.toInterestDto(interest, keywords, false);
+    return interestMapper.toDto(interest, keywords, false);
   }
 
   @Override

@@ -10,6 +10,7 @@ import com.monew.monew_api.interest.entity.Interest;
 import com.monew.monew_api.interest.entity.Keyword;
 import com.monew.monew_api.interest.repository.InterestRepository;
 import com.monew.monew_batch.article.dto.ArticleKeywordPair;
+import com.monew.monew_batch.article.matric.NewsBatchMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ExitStatus;
@@ -35,13 +36,16 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleKeywordPair>>
     private final InterestRepository interestRepository;
     private final InterestArticlesRepository interestArticlesRepository;
     private final InterestArticleKeywordRepository interestArticleKeywordRepository;
+    private final NewsBatchMetrics metrics;
 
     private final Map<Long, Integer> newLinkCountsByInterestId = new ConcurrentHashMap<>();
 
+    private int total = 0;
+    private int newCount = 0;
+    private int linkedCount = 0;
+
     @Override
     public void write(Chunk<? extends List<ArticleKeywordPair>> chunk) {
-        int total = 0, newCount = 0, linkedCount = 0;
-
         for (List<ArticleKeywordPair> batch : chunk) {
             for (ArticleKeywordPair pair : batch) {
                 total++;
@@ -84,6 +88,9 @@ public class NaverNewsItemWriter implements ItemWriter<List<ArticleKeywordPair>>
                     .put("newLinkCountsByInterestId", newLinkCountsByInterestId);
             log.info("JobExecutionContext에 최종 집계 데이터 저장 완료.");
         }
+
+        metrics.recordArticles(total, newCount, linkedCount);
+        log.info("Prometheus 메트릭 기록 완료 | total={}, new={}, linked={}", total, newCount, linkedCount);
 
         return ExitStatus.COMPLETED;
     }

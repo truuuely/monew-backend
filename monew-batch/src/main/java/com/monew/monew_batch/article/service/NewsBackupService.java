@@ -2,6 +2,7 @@ package com.monew.monew_batch.article.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monew.monew_api.article.dto.NewsBackupData;
+import com.monew.monew_batch.article.matric.NewsBatchMetrics;
 import com.monew.monew_batch.article.repository.ArticleBackupQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class NewsBackupService {
     private final ArticleBackupQueryRepository backupQueryRepository;
     private final ObjectMapper objectMapper;
     private final S3Client s3Client;
+    private final NewsBatchMetrics metrics;
 
     @Value("${aws.bucket}")
     private String bucketName;
@@ -63,9 +65,11 @@ public class NewsBackupService {
             );
 
             log.info("✅ 뉴스 전체 백업 완료 | 총 {}건 | S3 Key = {}", articles.size(), key);
+            metrics.recordBackup(true, articles.size());
 
         } catch (Exception e) {
             log.error("❌ 뉴스 백업 실패", e);
+            metrics.recordBackup(false, 0);
             throw new RuntimeException("뉴스 백업 실패", e);
         }
     }
