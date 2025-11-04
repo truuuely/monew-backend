@@ -29,6 +29,7 @@ subprojects {
     test {
         useJUnitPlatform()
         finalizedBy jacocoTestReport // 테스트 후 커버리지 자동 생성
+        systemProperty 'spring.profiles.active', 'test' // H2 프로필 강제 적용
     }
 
     jacocoTestReport {
