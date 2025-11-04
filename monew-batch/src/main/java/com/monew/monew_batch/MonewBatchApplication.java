@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.TimeZone;
@@ -19,6 +20,7 @@ import java.util.TimeZone;
 @EnableJpaRepositories(basePackages = "com.monew.monew_api")
 @EnableScheduling
 @EnableJpaAuditing
+@EnableAsync
 public class MonewBatchApplication {
 
 	public static void main(String[] args) {
