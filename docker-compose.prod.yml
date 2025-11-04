@@ -29,7 +29,7 @@ services:
       - monew-network
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -70,6 +70,7 @@ services:
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
       NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
       NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+      MONEW_API_URL: ${MONEW_API_URL}
       JAVA_OPTS: "-Xmx1g -Xms512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
     ports:
       - "${BATCH_PORT:-8081}:8081"
@@ -91,7 +92,8 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
+    volumes:
+     - ./logs/batch:/app/.logs
   # Monitor Application (Production)
   monitor:
     build:
@@ -115,7 +117,7 @@ services:
       - monew-network
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -134,30 +136,13 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Nginx (Optional - Reverse Proxy)
-  nginx:
-    image: nginx:alpine
-    container_name: monew-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - api
-      - batch
-      - monitor
-    networks:
-      - monew-network
-    restart: always
-
   # Prometheus (Metrics Collector)
   prometheus:
     image: prom/prometheus:latest
     container_name: monew-prometheus
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+#      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monew-monitor/src/main/resources/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     networks:
