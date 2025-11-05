@@ -1,12 +1,12 @@
-package com.monew.monew_batch.common.config;
+package com.monew.monew_batch.article.config;
 
 import com.monew.monew_api.interest.entity.Keyword;
 import com.monew.monew_batch.article.dto.ArticleKeywordPair;
 import com.monew.monew_batch.article.job.ArticleNotificationRequestListener;
-import com.monew.monew_batch.article.job.NaverNewsItemProcessor;
-import com.monew.monew_batch.article.job.NaverNewsItemReader;
-import com.monew.monew_batch.article.job.NaverNewsItemWriter;
-import com.monew.monew_batch.article.properties.NaverApiProperties;
+import com.monew.monew_batch.article.job.processor.NaverArticleItemProcessor;
+import com.monew.monew_batch.article.job.ArticleItemReader;
+import com.monew.monew_batch.article.job.ArticleItemWriter;
+import com.monew.monew_batch.article.properties.NaverProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -26,12 +26,12 @@ import java.util.List;
 @Configuration
 @EnableBatchProcessing
 @RequiredArgsConstructor
-@EnableConfigurationProperties(NaverApiProperties.class)
-public class NaverNewsJobConfig {
+@EnableConfigurationProperties(NaverProperties.class)
+public class NaverJobConfig {
 
-    private final NaverNewsItemReader reader;
-    private final NaverNewsItemProcessor processor;
-    private final NaverNewsItemWriter writer;
+    private final ArticleItemReader reader;
+    private final NaverArticleItemProcessor processor;
+    private final ArticleItemWriter writer;
     private final ArticleNotificationRequestListener listener;
 
     @Bean
@@ -54,7 +54,7 @@ public class NaverNewsJobConfig {
                 .build();
     }
 
-    @Bean
+    @Bean(name = "naverTaskExecutor")
     public TaskExecutor taskExecutor() {
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("naver-news-thread-");
         executor.setConcurrencyLimit(2);

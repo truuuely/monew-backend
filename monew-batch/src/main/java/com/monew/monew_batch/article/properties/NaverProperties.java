@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Getter
 @RequiredArgsConstructor
 @ConfigurationProperties(prefix = "naver")
-public class NaverApiProperties {
+public class NaverProperties {
     private final String url;
     private final String clientId;
     private final String clientSecret;
