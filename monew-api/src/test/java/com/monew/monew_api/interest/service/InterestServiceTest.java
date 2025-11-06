@@ -10,7 +10,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.monew.monew_api.article.repository.ArticleRepository;
@@ -18,6 +20,8 @@ import com.monew.monew_api.article.repository.InterestArticleKeywordRepository;
 import com.monew.monew_api.article.repository.InterestArticlesRepository;
 import com.monew.monew_api.common.exception.interest.InterestDuplicatedException;
 import com.monew.monew_api.interest.dto.request.InterestUpdateRequest;
+import com.monew.monew_api.interest.event.InterestDeletedEvent;
+import com.monew.monew_api.interest.event.InterestUpdatedEvent;
 import com.monew.monew_api.user.User;
 import com.monew.monew_api.interest.TestInterestForm;
 import com.monew.monew_api.interest.dto.InterestOrderBy;
@@ -43,6 +47,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
@@ -71,6 +76,9 @@ public class InterestServiceTest {
 
   @Mock
   InterestMapper interestMapper;
+
+  @Mock
+  private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks
   InterestServiceImpl interestService;
@@ -204,6 +212,17 @@ public class InterestServiceTest {
     verify(interestArticleKeywordRepository).findArticleIdsByKeywordIds(anyList());
     verify(interestArticleKeywordRepository, never()).findArticlesUsedElsewhere(anyList(), anyList(), anyLong());
     verify(articleRepository, never()).markAsDeleted(anyList());
+
+    // 이벤트 검증
+    ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+    Object published = eventCaptor.getValue();
+    assertThat(published).isInstanceOf(InterestUpdatedEvent.class);
+
+    InterestUpdatedEvent ev = (InterestUpdatedEvent) published;
+    assertThat(ev.interestId()).isEqualTo(interest.getId());
+    assertThat(ev.newKeywords()).containsExactly("keyword2");
   }
 
   @DisplayName("관심사 삭제- 관련 기사 없으면 바로 삭제")
@@ -245,5 +264,22 @@ public class InterestServiceTest {
     assertThat(captor.getValue()).containsExactlyInAnyOrder(1L, 3L);
 
     verify(interestRepository).delete(interest);
+
+    // 이벤트 검증
+    ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+    Object published = eventCaptor.getValue();
+    assertThat(published).isInstanceOf(InterestDeletedEvent.class);
+    InterestDeletedEvent ev = (InterestDeletedEvent) published;
+    assertThat(ev.interestId()).isEqualTo(interestId);
+
+    // then 4) 연관 리포지토리 호출 인자 검증(의도 확인)
+    verify(interestArticlesRepository).findArticleIdsByInterestId(interestId);
+    verify(interestArticlesRepository)
+        .findArticleIdsUsedByOtherInterests(articleIds, interestId);
+
+    // then 5) 불필요한 호출이 없는지(선택적 강화)
+    verify(interestRepository, never()).deleteById(anyLong());
+    verifyNoMoreInteractions(articleRepository, eventPublisher);
   }
 }
