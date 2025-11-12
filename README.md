@@ -64,7 +64,6 @@ https://github.com/user-attachments/assets/e1d18b5b-4470-41db-b318-1a91ae83fef4
 * Docker & AWS ECS 배포 환경 구성
 * GitHub Actions 통한 자동 배포(CI/CD) 파이프라인 구축
 * Prometheus + Grafana 기반 모니터링 환경 구성
-* DDL 설계
 
 > GitHub: [🔗 chanhyeok0201](https://github.com/chanhyeok0201)
 
@@ -111,35 +110,16 @@ https://github.com/user-attachments/assets/e1d18b5b-4470-41db-b318-1a91ae83fef4
 
 <br>
 
-## ⚙️ 시스템 아키텍처
-
-**데이터 성격에 따라 저장소를 분리하고, 클라우드 기반 자동 배포 및 모니터링 환경 구축**
-
-* **PostgreSQL** → 핵심 서비스 데이터 (회원, 기사, 댓글, 관심사)
-* **MongoDB** → 조회가 빈번한 사용자 활동 캐시
-* **H2** → 테스트 데이터 저장
-* **S3** → 뉴스 백업 및 복구 파일 저장
-* **Spring Batch** → 정기 뉴스 수집 및 데이터 정제
-* **Prometheus + Grafana + Actuator** → 메트릭 수집 및 서비스 상태 모니터링 (정영진, 김찬혁 담당)
-* **GitHub Actions + ECS + ALB** → CI/CD 자동화 및 트래픽 분산 (김찬혁, 정영진 담당)
-
-<br>
-
-## 🔍 트러블슈팅 요약
-
-| **담당자** | **구분** | **문제 상황**                  | **원인**                        | **해결 방법**                                          |
-| :------ | :----- | :------------------------- | :---------------------------- | :------------------------------------------------- |
-| 강문영     | 알림     | 알림 전체 확인 시 N+1 문제          | Dirty Checking으로 인한 다중 Update | JPQL Bulk Update로 개선 (92% 속도 향상)                   |
-| 임재혁     | 키워드    | Keyword 중복 및 참조 불일치        | 비정규화된 ArticleKeywordLogs 구조   | InterestArticleKeywords 도입 및 JSON 기반 백업 구조로 통합     |
-| 임재혁     | 배치     | 멀티스레드 환경 중복키 충돌            | JPA Save()의 SELECT→INSERT 구조  | PostgreSQL `ON CONFLICT DO NOTHING` + JDBC 전환으로 해결 |
-| 정영진     | 활동 내역  | 여러 Repository 호출로 인한 쿼리 병목 | 다중 쿼리 구조로 인한 성능 저하            | CTE 기반 단일 쿼리 통합 (15% 성능 개선)                        |
-| 정영진     | DB 부하  | PostgreSQL 단일 처리로 부하 집중    | 배치와 서비스 요청 혼재                 | MongoDB를 캐시 DB로 분리 (P99 지연 27% 개선)                 |
-
-<br>
-
 ### ERD
 
 <img width="1693" height="1091" alt="Monew (2) 1" src="https://github.com/user-attachments/assets/87700e1e-6519-4c0a-ae02-3ed22d39431d" />
+
+<br>
+
+## ⚙️ 시스템 아키텍처
+
+**데이터 성격에 따라 저장소를 분리하고, 클라우드 기반 자동 배포 및 모니터링 환경 구축**
+<img width="1500" height="836" alt="스크린샷 2025-11-12 오후 3 35 30" src="https://github.com/user-attachments/assets/adfe8af9-3e00-437f-94c2-aa7d65f95623" />
 
 <br>
 
